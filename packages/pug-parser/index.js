@@ -51,9 +51,9 @@ Parser.prototype = {
 
   error: function (code, message, token) {
     var err = error(code, message, {
-      line: token.line,
-      column: token.col,
-      filename: this.filename,
+      line: token.loc.start.line,
+      column: token.loc.start.column,
+      filename: token.loc.filename,
       src: this.src
     });
     throw err;
@@ -92,6 +92,91 @@ Parser.prototype = {
   lookahead: function(n){
     return this.tokens.lookahead(n);
   },
+  
+  /**
+   * Add multiple children to a node's array. This joins each child's loc to the parent's and pushes it to the child array.
+   * @param {Object} parent - a valid node
+   * @param {Object|Object[]} child - a valid node or array of nodes
+   * @param {Object[]} [child_array] - array to push or concat the child value to
+   * @returns {Object}
+   * @api private
+   */
+  addChildren: function(parent, children, child_array){
+    if(!children) return;
+    
+    for(var i = 0; i < children.length; i++){
+      this.addChild(parent, children[i], child_array);
+    }
+    
+    return children;
+  },
+  
+  /**
+   * This joins the child's loc to the parent's and returns the child.
+   * @param {Object} parent - a valid node
+   * @param {Object|Object[]} child - a valid node or array of nodes
+   * @returns {Object}
+   * @api private
+   */
+  addChild: function(parent, child, child_array){
+    parent.loc = this.addChildLocs(parent.loc, child.loc);
+    if(child_array) child_array.push(child);
+    return child;
+  },
+  
+  
+  /**
+   * Add child loc to parent. Expand to the furthest extents. Assumes loc start is always equal to or before end.
+   * @param {Object} parent 
+   * @param {Object} child 
+   * @returns {Object}
+   * @api private
+   */
+  
+  addChildLocs: function(parent, child){
+    // both can be undefined
+    if(!parent && !child) return;
+    
+    // one may be undefined
+    if(!parent) parent = child;
+    else if(!child) child = parent;
+    
+    if(parent.filename !== child.filename) throw new Error('Cannot join loc values from two different source files.');
+    
+    var r = {
+      start: { line: parent.start.line, column: parent.start.column },
+      end: { line: child.end.line, column: child.end.column },
+      filename: parent.filename
+    };
+    
+    if(parent === child) return r;
+    
+    if(parent.start.line > child.start.line || (parent.start.line === child.start.line && parent.start.column > child.start.column)){
+      r.start.line = child.start.line;
+      r.start.column = child.start.column;
+    }
+    
+    if(parent.end.line > child.end.line || (parent.end.line === child.end.line && parent.end.column > child.end.column)){
+      r.end.line = parent.end.line;
+      r.end.column = parent.end.column;
+    }
+    
+    return r;
+  },
+  
+  emptyLoc: function(tok, loc){
+    if(tok.loc){
+      return;
+    }
+    
+    tok.loc = {
+      start: { line:loc.end.line, column:loc.end.column },
+      end: { line:loc.end.line, column:loc.end.column },
+      filename: loc.filename
+    };
+    
+    return tok;
+  },
 
   /**
    * Parse input returning a string of js for evaluation.
@@ -101,17 +186,20 @@ Parser.prototype = {
    */
 
   parse: function(){
-    var block = this.emptyBlock(0);
+    var block = this.emptyBlock();
 
     while ('eos' != this.peek().type) {
       if ('newline' == this.peek().type) {
         this.advance();
       } else if ('text-html' == this.peek().type) {
-        block.nodes = block.nodes.concat(this.parseTextHtml());
+        this.addChildren(block, this.parseTextHtml(), block.nodes);
       } else {
-        var expr = this.parseExpr();
-        if (expr) block.nodes.push(expr);
+        this.addChild(block, this.parseExpr(), block.nodes);
       }
+    }
+    
+    if(!block.loc){
+      block.loc = { start:{ line:1, column:1 }, filename:'', end:{ line:1, column:1 } };
     }
 
     return block;
@@ -145,21 +233,23 @@ Parser.prototype = {
     }
   },
 
-  initBlock: function(line, nodes) {
-    /* istanbul ignore if */
-    if ((line | 0) !== line) throw new Error('`line` is not an integer');
+  initBlock: function(nodes) {
     /* istanbul ignore if */
     if (!Array.isArray(nodes)) throw new Error('`nodes` is not an array');
-    return {
+    var tok = {
       type: 'Block',
-      nodes: nodes,
-      line: line,
-      filename: this.filename
+      nodes: nodes
     };
+    
+    for(var i = 0; i < nodes.length; i++){
+      tok.loc = this.addChildLocs(tok.loc, nodes[i].loc);
+    }
+    
+    return tok;
   },
 
-  emptyBlock: function(line) {
-    return this.initBlock(line, []);
+  emptyBlock: function() {
+    return this.initBlock([]);
   },
 
   runPlugin: function(context, tok) {
@@ -223,7 +313,7 @@ Parser.prototype = {
       case 'start-pug-interpolation':
         return this.parseText({block: true});
       case 'text-html':
-        return this.initBlock(this.peek().line, this.parseTextHtml());
+        return this.initBlock(this.parseTextHtml());
       case 'dot':
         return this.parseDot();
       case 'each':
@@ -247,8 +337,7 @@ Parser.prototype = {
         this.tokens.defer({
           type: 'tag',
           val: 'div',
-          line: this.peek().line,
-          filename: this.filename
+          loc: this.peek().loc
         });
         return this.parseExpr();
       default:
@@ -269,7 +358,7 @@ Parser.prototype = {
 
   parseText: function(options){
     var tags = [];
-    var lineno = this.peek().line;
+    var loc = this.peek().loc;
     var nextTok = this.peek();
     loop:
       while (true) {
@@ -279,8 +368,7 @@ Parser.prototype = {
             tags.push({
               type: 'Text',
               val: tok.val,
-              line: tok.line,
-              filename: this.filename
+              loc: tok.loc
             });
             break;
           case 'interpolated-code':
@@ -291,8 +379,7 @@ Parser.prototype = {
               buffer: tok.buffer,
               mustEscape: tok.mustEscape !== false,
               isInline: true,
-              line: tok.line,
-              filename: this.filename
+              loc: tok.loc
             });
             break;
           case 'newline':
@@ -302,8 +389,7 @@ Parser.prototype = {
               tags.push({
                 type: 'Text',
                 val: '\n',
-                line: tok.line,
-                filename: this.filename
+                loc: tok.loc
               });
             }
             break;
@@ -320,7 +406,7 @@ Parser.prototype = {
         nextTok = this.peek();
       }
     if (tags.length === 1) return tags[0];
-    else return this.initBlock(lineno, tags);
+    else return this.initBlock(tags);
   },
 
   parseTextHtml: function () {
@@ -335,8 +421,7 @@ loop:
             currentNode = {
               type: 'Text',
               val: text.val,
-              filename: this.filename,
-              line: text.line,
+              loc: text.loc,
               isHtml: true
             };
             nodes.push(currentNode);
@@ -382,7 +467,7 @@ loop:
   parseBlockExpansion: function(){
     var tok = this.accept(':');
     if (tok) {
-      return this.initBlock(tok.line, [this.parseExpr()]);
+      return this.initBlock([this.parseExpr()]);
     } else {
       return this.block();
     }
@@ -394,9 +479,9 @@ loop:
 
   parseCase: function(){
     var tok = this.expect('case');
-    var node = {type: 'Case', expr: tok.val, line: tok.line, filename: this.filename};
+    var node = {type: 'Case', expr: tok.val, loc: tok.loc};
 
-    var block = this.emptyBlock(tok.line + 1);
+    var block = this.emptyBlock();
     this.expect('indent');
     while ('outdent' != this.peek().type) {
       switch (this.peek().type) {
@@ -405,10 +490,10 @@ loop:
           this.advance();
           break;
         case 'when':
-          block.nodes.push(this.parseWhen());
+          this.addChild(block, this.parseWhen(), block.nodes);
           break;
         case 'default':
-          block.nodes.push(this.parseDefault());
+          this.addChild(block, this.parseDefault(), block.nodes);
           break;
         default:
           var pluginResult = this.runPlugin('caseTokens', this.peek(), block);
@@ -418,8 +503,13 @@ loop:
       }
     }
     this.expect('outdent');
+    
+    if(!block.loc){
+      node.block = this.emptyLoc(block, tok.loc);
+    } else {
+      node.block = this.addChild(node, block);
+    }
 
-    node.block = block;
 
     return node;
   },
@@ -430,22 +520,22 @@ loop:
 
   parseWhen: function(){
     var tok = this.expect('when');
+    var node;
     if (this.peek().type !== 'newline') {
-      return {
+      node = {
         type: 'When',
         expr: tok.val,
-        block: this.parseBlockExpansion(),
         debug: false,
-        line: tok.line,
-        filename: this.filename
+        loc: tok.loc
       };
+      node.block = this.addChild(node, this.parseBlockExpansion());
+      return node;
     } else {
       return {
         type: 'When',
         expr: tok.val,
         debug: false,
-        line: tok.line,
-        filename: this.filename
+        loc: tok.loc
       };
     }
   },
@@ -456,14 +546,14 @@ loop:
 
   parseDefault: function(){
     var tok = this.expect('default');
-    return {
+    var node = {
       type: 'When',
       expr: 'default',
-      block: this.parseBlockExpansion(),
       debug: false,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
+    node.block = this.addChild(node, this.parseBlockExpansion());
+    return node;
   },
 
   /**
@@ -479,8 +569,7 @@ loop:
       buffer: tok.buffer,
       mustEscape: tok.mustEscape !== false,
       isInline: !!noBlock,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
     // todo: why is this here?  It seems like a hacky workaround
     if (node.val.match(/^ *else/)) node.debug = false;
@@ -495,73 +584,90 @@ loop:
       if (tok.buffer) {
         this.error('BLOCK_IN_BUFFERED_CODE', 'Buffered code cannot have a block attached to it', this.peek());
       }
-      node.block = this.block();
+      node.block = this.addChild(node, this.block());
     }
 
     return node;
   },
+  
   parseConditional: function(){
     var tok = this.expect('if');
     var node = {
       type: 'Conditional',
       test: tok.val,
-      consequent: this.emptyBlock(tok.line),
       alternate: null,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
 
     // handle block
     if ('indent' == this.peek().type) {
-      node.consequent = this.block();
+      node.consequent = this.addChild(node, this.block());
+    } else {
+      node.consequent = this.emptyLoc(this.emptyBlock(), node.loc);
     }
-
-    var currentNode = node;
-    while (true) {
-      if (this.peek().type === 'newline') {
-        this.expect('newline');
-      } else if (this.peek().type === 'else-if') {
-        tok = this.expect('else-if');
-        currentNode = (
-          currentNode.alternate = {
-            type: 'Conditional',
-            test: tok.val,
-            consequent: this.emptyBlock(tok.line),
-            alternate: null,
-            line: tok.line,
-            filename: this.filename
-          }
-        );
-        if ('indent' == this.peek().type) {
-          currentNode.consequent = this.block();
-        }
-      } else if (this.peek().type === 'else') {
-        this.expect('else');
-        if (this.peek().type === 'indent') {
-          currentNode.alternate = this.block();
-        }
-        break;
-      } else {
-        break;
-      }
+    
+    var alt = this.parseConditionalElse(node);
+    
+    if(alt){
+      node.alternate = this.addChild(node, alt);
     }
 
     return node;
   },
+  
+  parseConditionalElse: function(parent){
+    while(this.peek().type === 'newline') {
+      this.expect('newline');
+    }
+    
+    if (this.peek().type === 'else-if') {
+      var tok = this.expect('else-if');
+      
+      var node = {
+        type: 'Conditional',
+        test: tok.val,
+        alternate: null,
+        loc: tok.loc
+      };
+      
+      
+      if ('indent' == this.peek().type) {
+        node.consequent = this.addChild(node, this.block());
+      } else {
+        node.consequent = this.emptyLoc(this.emptyBlock(), tok.loc);
+      }
+      
+      var alt = this.parseConditionalElse(node);
+      
+      if(alt){
+        node.alternate = this.addChild(node, alt);
+      }
+      
+      return node;
+    }
+    
+    if (this.peek().type === 'else') {
+      parent.loc = this.addChildLocs(parent.loc, this.expect('else').loc);
+      
+      if (this.peek().type === 'indent') {
+        return this.block();
+      }
+    }
+  },
+  
   parseWhile: function(){
     var tok = this.expect('while');
     var node = {
       type: 'While',
       test: tok.val,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
 
     // handle block
     if ('indent' == this.peek().type) {
       node.block = this.block();
     } else {
-      node.block = this.emptyBlock(tok.line);
+      node.block = this.emptyBlock();
     }
 
     return node;
@@ -572,7 +678,7 @@ loop:
    */
 
   parseBlockCode: function(){
-    var line = this.expect('blockcode').line;
+    var loc = this.expect('blockcode').loc;
     var body = this.peek();
     var text = '';
     if (body.type === 'start-pipeless-text') {
@@ -582,9 +688,11 @@ loop:
         switch (tok.type) {
           case 'text':
             text += tok.val;
+            loc = this.addChildLocs(loc, tok.loc);
             break;
           case 'newline':
             text += '\n';
+            loc = this.addChildLocs(loc, tok.loc);
             break;
           default:
             var pluginResult = this.runPlugin('blockCodeTokens', tok, tok);
@@ -603,8 +711,7 @@ loop:
       buffer: false,
       mustEscape: false,
       isInline: false,
-      line: line,
-      filename: this.filename
+      loc: loc
     };
   },
   /**
@@ -620,16 +727,14 @@ loop:
         val: tok.val,
         block: block,
         buffer: tok.buffer,
-        line: tok.line,
-        filename: this.filename
+        loc: this.addChildLocs(tok.loc, block.loc)
       };
     } else {
       return {
         type: 'Comment',
         val: tok.val,
         buffer: tok.buffer,
-        line: tok.line,
-        filename: this.filename
+        loc: tok.loc
       };
     }
   },
@@ -643,8 +748,7 @@ loop:
     return {
       type: 'Doctype',
       val: tok.val,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
   },
 
@@ -653,15 +757,14 @@ loop:
     var attrs = [];
 
     if (this.peek().type === 'start-attributes') {
-      attrs = this.attrs();
+      attrs = this.attrs(tok);
     }
 
     return {
       type: 'IncludeFilter',
       name: tok.val,
       attrs: attrs,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
   },
 
@@ -674,23 +777,22 @@ loop:
     var block, attrs = [];
 
     if (this.peek().type === 'start-attributes') {
-      attrs = this.attrs();
+      attrs = this.attrs(tok);
     }
 
     if (this.peek().type === 'text') {
       var textToken = this.advance();
-      block = this.initBlock(textToken.line, [
+      block = this.initBlock([
         {
           type: 'Text',
           val: textToken.val,
-          line: textToken.line,
-          filename: this.filename
+          loc: textToken.loc
         }
       ]);
     } else if (this.peek().type === 'filter') {
-      block = this.initBlock(tok.line, [this.parseFilter()]);
+      block = this.initBlock([this.parseFilter()]);
     } else {
-      block = this.parseTextBlock() || this.emptyBlock(tok.line);
+      block = this.parseTextBlock() || this.emptyBlock();
     }
 
     return {
@@ -698,8 +800,7 @@ loop:
       name: tok.val,
       block: block,
       attrs: attrs,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
   },
 
@@ -714,13 +815,12 @@ loop:
       obj: tok.code,
       val: tok.val,
       key: tok.key,
-      block: this.block(),
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
+    node.block = this.addChild(node, this.block());
     if (this.peek().type == 'else') {
       this.advance();
-      node.alternate = this.block();
+      node.alternate = this.addChild(node, this.block());
     }
     return node;
   },
@@ -737,11 +837,9 @@ loop:
       file: {
         type: 'FileReference',
         path: path.val.trim(),
-        line: tok.line,
-        filename: this.filename
+        loc: path.loc
       },
-      line: tok.line,
-      filename: this.filename
+      loc: this.addChildLocs(tok.loc, path.loc)
     };
   },
 
@@ -752,11 +850,11 @@ loop:
   parseBlock: function(){
     var tok = this.expect('block');
 
-    var node = 'indent' == this.peek().type ? this.block() : this.emptyBlock(tok.line);
+    var node = 'indent' == this.peek().type ? this.block() : this.emptyBlock();
     node.type = 'NamedBlock';
     node.name = tok.val.trim();
     node.mode = tok.mode;
-    node.line = tok.line;
+    node.loc = this.addChildLocs(node.loc, tok.loc);
 
     return node;
   },
@@ -766,12 +864,12 @@ loop:
     if (!this.inMixin) {
       this.error('BLOCK_OUTISDE_MIXIN', 'Anonymous blocks are not allowed unless they are part of a mixin.', tok);
     }
-    return {type: 'MixinBlock', line: tok.line, filename: this.filename};
+    return {type: 'MixinBlock', loc: tok.loc};
   },
 
   parseYield: function() {
     var tok = this.expect('yield');
-    return {type: 'YieldBlock', line: tok.line, filename: this.filename};
+    return {type: 'YieldBlock', loc: tok.loc};
   },
 
   /**
@@ -784,12 +882,11 @@ loop:
       type: 'Include',
       file: {
         type: 'FileReference',
-        line: tok.line,
-        filename: this.filename
+        loc: tok.loc
       },
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
+    
     var filters = [];
     while (this.peek().type === 'filter') {
       filters.push(this.parseIncludeFilter());
@@ -799,7 +896,7 @@ loop:
     node.file.path = path.val.trim();
 
     if ((/\.jade$/.test(node.file.path) || /\.pug$/.test(node.file.path)) && !filters.length) {
-      node.block = 'indent' == this.peek().type ? this.block() : this.emptyBlock(tok.line);
+      node.block = 'indent' == this.peek().type ? this.block() : this.emptyBlock();
       if (/\.jade$/.test(node.file.path)) {
         console.warn(
           this.filename + ', line ' + tok.line +
@@ -828,12 +925,11 @@ loop:
       type: 'Mixin',
       name: name,
       args: args,
-      block: this.emptyBlock(tok.line),
+      block: this.emptyBlock(),
       call: true,
       attrs: [],
       attributeBlocks: [],
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
 
     this.tag(mixin);
@@ -862,8 +958,7 @@ loop:
         args: args,
         block: this.block(),
         call: false,
-        line: tok.line,
-        filename: this.filename
+        loc: tok.loc
       };
       this.inMixin--;
       return mixin;
@@ -879,30 +974,29 @@ loop:
   parseTextBlock: function(){
     var tok = this.accept('start-pipeless-text');
     if (!tok) return;
-    var block = this.emptyBlock(tok.line);
+    var block = this.emptyBlock();
     while (this.peek().type !== 'end-pipeless-text') {
       var tok = this.advance();
       switch (tok.type) {
         case 'text':
-          block.nodes.push({type: 'Text', val: tok.val, line: tok.line});
+          this.addChild(block, {type: 'Text', val: tok.val, loc: tok.loc}, block.nodes);
           break;
         case 'newline':
-          block.nodes.push({type: 'Text', val: '\n', line: tok.line});
+          this.addChild(block, {type: 'Text', val: '\n', loc: tok.loc}, block.nodes);
           break;
         case 'start-pug-interpolation':
-          block.nodes.push(this.parseExpr());
+          this.addChild(block, this.parseExpr(), block.nodes);
           this.expect('end-pug-interpolation');
           break;
         case 'interpolated-code':
-          block.nodes.push({
+          this.addChild(block, {
             type: 'Code',
             val: tok.val,
             buffer: tok.buffer,
             mustEscape: tok.mustEscape !== false,
             isInline: true,
-            line: tok.line,
-            filename: this.filename
-          });
+            loc: tok.loc
+          }, block.nodes);
           break;
         default:
           var pluginResult = this.runPlugin('textBlockTokens', tok, block, tok);
@@ -920,15 +1014,14 @@ loop:
 
   block: function(){
     var tok = this.expect('indent');
-    var block = this.emptyBlock(tok.line);
+    var block = this.emptyBlock();
     while ('outdent' != this.peek().type) {
       if ('newline' == this.peek().type) {
         this.advance();
       } else if ('text-html' == this.peek().type) {
-        block.nodes = block.nodes.concat(this.parseTextHtml());
+        this.addChildren(block, this.parseTextHtml(), block.nodes);
       } else {
-        var expr = this.parseExpr();
-        block.nodes.push(expr);
+        this.addChild(block, this.parseExpr(), block.nodes);
       }
     }
     this.expect('outdent');
@@ -945,12 +1038,11 @@ loop:
       type: 'InterpolatedTag',
       expr: tok.val,
       selfClosing: false,
-      block: this.emptyBlock(tok.line),
+      block: this.emptyBlock(),
       attrs: [],
       attributeBlocks: [],
       isInline: false,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
 
     return this.tag(tag, {selfClosingAllowed: true});
@@ -966,12 +1058,11 @@ loop:
       type: 'Tag',
       name: tok.val,
       selfClosing: false,
-      block: this.emptyBlock(tok.line),
+      block: this.emptyBlock(),
       attrs: [],
       attributeBlocks: [],
       isInline: inlineTags.indexOf(tok.val) !== -1,
-      line: tok.line,
-      filename: this.filename
+      loc: tok.loc
     };
 
     return this.tag(tag, {selfClosingAllowed: true});
@@ -998,21 +1089,23 @@ loop:
               }
               attributeNames.push('id');
             }
-            tag.attrs.push({
+            this.addChild(tag, {
               name: tok.type,
               val: "'" + tok.val + "'",
-              mustEscape: false
-            });
+              mustEscape: false,
+              loc: tok.loc
+            }, tag.attrs);
             continue;
           case 'start-attributes':
             if (seenAttrs) {
               console.warn(this.filename + ', line ' + this.peek().line + ':\nYou should not have pug tags with multiple attributes.');
             }
             seenAttrs = true;
-            tag.attrs = tag.attrs.concat(this.attrs(attributeNames));
+            this.addChildren(tag, this.attrs(tag, attributeNames), tag.attrs);
             continue;
           case '&attributes':
             var tok = this.advance();
+            tag.loc = this.addChildLocs(tag.loc, tok.loc);
             tag.attributeBlocks.push(tok.val);
             break;
           default:
@@ -1034,17 +1127,17 @@ loop:
       case 'interpolated-code':
         var text = this.parseText();
         if (text.type === 'Block') {
-          tag.block.nodes.push.apply(tag.block.nodes, text.nodes);
+          this.addChildren(tag.block, text.nodes, tag.block.nodes);
         } else {
-          tag.block.nodes.push(text);
+          this.addChild(tag.block, text, tag.block.nodes);
         }
         break;
       case 'code':
-        tag.block.nodes.push(this.parseCode(true));
+        this.addChild(tag.block, this.parseCode(true), tag.block.nodes);
         break;
       case ':':
         this.advance();
-        tag.block = this.initBlock(tag.line, [this.parseExpr()]);
+        tag.block = this.addChild(tag, this.initBlock([this.parseExpr()]));
         break;
       case 'newline':
       case 'indent':
@@ -1055,7 +1148,7 @@ loop:
         break;
       case 'slash':
         if (selfClosingAllowed) {
-          this.advance();
+          this.addChildLocs(tag.loc, this.advance().loc);
           tag.selfClosing = true;
           break;
         }
@@ -1070,18 +1163,21 @@ loop:
 
     // block?
     if (tag.textOnly) {
-      tag.block = this.parseTextBlock() || this.emptyBlock(tag.line);
+      tag.block = this.parseTextBlock() || this.emptyBlock();
     } else if ('indent' == this.peek().type) {
-      var block = this.block();
-      for (var i = 0, len = block.nodes.length; i < len; ++i) {
-        tag.block.nodes.push(block.nodes[i]);
-      }
+      this.addChildren(tag.block, this.block().nodes, tag.block.nodes);
     }
+    
+    if(!tag.block.loc){
+      this.emptyLoc(tag.block, tag.loc);
+    }
+    
+    tag.loc = this.addChildLocs(tag.loc, tag.block.loc);
 
     return tag;
   },
 
-  attrs: function(attributeNames) {
+  attrs: function(parent, attributeNames) {
     this.expect('start-attributes');
 
     var attrs = [];
@@ -1096,12 +1192,14 @@ loop:
       attrs.push({
         name: tok.name,
         val: tok.val,
-        mustEscape: tok.mustEscape !== false
+        mustEscape: tok.mustEscape !== false,
+        loc: tok.loc
       });
       tok = this.advance();
     }
     this.tokens.defer(tok);
     this.expect('end-attributes');
+    parent.loc = this.addChildLocs(parent.loc, tok.loc);
     return attrs;
   }
 };
