@@ -1,11 +1,11 @@
-{"type":"doctype","line":1,"col":1,"val":"xml"}
-{"type":"newline","line":2,"col":1}
-{"type":"tag","line":2,"col":1,"val":"category"}
-{"type":"start-attributes","line":2,"col":9}
-{"type":"attribute","line":2,"col":10,"name":"term","val":"'some term'","mustEscape":true}
-{"type":"end-attributes","line":2,"col":26}
-{"type":"slash","line":2,"col":27}
-{"type":"newline","line":3,"col":1}
-{"type":"tag","line":3,"col":1,"val":"link"}
-{"type":"text","line":3,"col":6,"val":"http://google.com"}
-{"type":"eos","line":3,"col":23}
+{"type":"doctype","val":"xml","loc":{"start":{"line":1,"column":1},"filename":"/cases/xml.pug","end":{"line":1,"column":12}}}
+{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/xml.pug","end":{"line":2,"column":1}}}
+{"type":"tag","val":"category","loc":{"start":{"line":2,"column":1},"filename":"/cases/xml.pug","end":{"line":2,"column":9}}}
+{"type":"start-attributes","loc":{"start":{"line":2,"column":9},"filename":"/cases/xml.pug","end":{"line":2,"column":10}}}
+{"type":"attribute","name":"term","val":"'some term'","mustEscape":true,"loc":{"start":{"line":2,"column":10},"filename":"/cases/xml.pug","end":{"line":2,"column":26}}}
+{"type":"end-attributes","loc":{"start":{"line":2,"column":26},"filename":"/cases/xml.pug","end":{"line":2,"column":27}}}
+{"type":"slash","loc":{"start":{"line":2,"column":27},"filename":"/cases/xml.pug","end":{"line":2,"column":28}}}
+{"type":"newline","loc":{"start":{"line":3,"column":1},"filename":"/cases/xml.pug","end":{"line":3,"column":1}}}
+{"type":"tag","val":"link","loc":{"start":{"line":3,"column":1},"filename":"/cases/xml.pug","end":{"line":3,"column":5}}}
+{"type":"text","val":"http://google.com","loc":{"start":{"line":3,"column":6},"filename":"/cases/xml.pug","end":{"line":3,"column":23}}}
+{"type":"eos","loc":{"start":{"line":3,"column":23},"filename":"/cases/xml.pug","end":{"line":3,"column":23}}}

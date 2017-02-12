@@ -1,44 +1,44 @@
-{"type":"comment","line":1,"col":1,"val":" see https://github.com/pugjs/pug/issues/1589","buffer":false}
-{"type":"newline","line":3,"col":1}
-{"type":"code","line":3,"col":1,"val":"var ajax = true","mustEscape":false,"buffer":false}
-{"type":"newline","line":5,"col":1}
-{"type":"code","line":5,"col":1,"val":"if( ajax )","mustEscape":false,"buffer":false}
-{"type":"indent","line":6,"col":1,"val":4}
-{"type":"comment","line":6,"col":5,"val":" return only contents if ajax requests","buffer":false}
-{"type":"newline","line":7,"col":1}
-{"type":"block","line":7,"col":5,"val":"contents","mode":"replace"}
-{"type":"indent","line":8,"col":1,"val":8}
-{"type":"tag","line":8,"col":9,"val":"p"}
-{"type":"text","line":8,"col":11,"val":"ajax contents"}
-{"type":"outdent","line":10,"col":5}
-{"type":"outdent","line":10,"col":1}
-{"type":"code","line":10,"col":1,"val":"else","mustEscape":false,"buffer":false}
-{"type":"indent","line":11,"col":1,"val":4}
-{"type":"comment","line":11,"col":5,"val":" return all html","buffer":false}
-{"type":"newline","line":12,"col":1}
-{"type":"doctype","line":12,"col":5,"val":"html"}
-{"type":"newline","line":13,"col":1}
-{"type":"tag","line":13,"col":5,"val":"html"}
-{"type":"indent","line":14,"col":1,"val":8}
-{"type":"tag","line":14,"col":9,"val":"head"}
-{"type":"indent","line":15,"col":1,"val":12}
-{"type":"tag","line":15,"col":13,"val":"meta"}
-{"type":"start-attributes","line":15,"col":17}
-{"type":"attribute","line":15,"col":19,"name":"charset","val":"'utf8'","mustEscape":true}
-{"type":"end-attributes","line":15,"col":34}
-{"type":"newline","line":16,"col":1}
-{"type":"tag","line":16,"col":13,"val":"title"}
-{"type":"text","line":16,"col":19,"val":"sample"}
-{"type":"newline","line":17,"col":1}
-{"type":"tag","line":17,"col":13,"val":"body"}
-{"type":"indent","line":18,"col":1,"val":16}
-{"type":"block","line":18,"col":17,"val":"contents","mode":"replace"}
-{"type":"indent","line":19,"col":1,"val":20}
-{"type":"tag","line":19,"col":21,"val":"p"}
-{"type":"text","line":19,"col":23,"val":"all contetns"}
-{"type":"outdent","line":20,"col":17}
-{"type":"outdent","line":20,"col":13}
-{"type":"outdent","line":20,"col":9}
-{"type":"outdent","line":20,"col":5}
-{"type":"outdent","line":20,"col":1}
-{"type":"eos","line":20,"col":1}
+{"type":"comment","val":" see https://github.com/pugjs/pug/issues/1589","buffer":false,"loc":{"start":{"line":1,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":1,"column":49}}}
+{"type":"newline","loc":{"start":{"line":3,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":3,"column":1}}}
+{"type":"code","val":"var ajax = true","mustEscape":false,"buffer":false,"loc":{"start":{"line":3,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":3,"column":17}}}
+{"type":"newline","loc":{"start":{"line":5,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":5,"column":1}}}
+{"type":"code","val":"if( ajax )","mustEscape":false,"buffer":false,"loc":{"start":{"line":5,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":5,"column":12}}}
+{"type":"indent","val":4,"loc":{"start":{"line":6,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":6,"column":5}}}
+{"type":"comment","val":" return only contents if ajax requests","buffer":false,"loc":{"start":{"line":6,"column":5},"filename":"/cases/blocks-in-if.pug","end":{"line":6,"column":46}}}
+{"type":"newline","loc":{"start":{"line":7,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":7,"column":5}}}
+{"type":"block","val":"contents","mode":"replace","loc":{"start":{"line":7,"column":5},"filename":"/cases/blocks-in-if.pug","end":{"line":7,"column":19}}}
+{"type":"indent","val":8,"loc":{"start":{"line":8,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":8,"column":9}}}
+{"type":"tag","val":"p","loc":{"start":{"line":8,"column":9},"filename":"/cases/blocks-in-if.pug","end":{"line":8,"column":10}}}
+{"type":"text","val":"ajax contents","loc":{"start":{"line":8,"column":11},"filename":"/cases/blocks-in-if.pug","end":{"line":8,"column":24}}}
+{"type":"outdent","loc":{"start":{"line":10,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":10,"column":1}}}
+{"type":"outdent","loc":{"start":{"line":10,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":10,"column":1}}}
+{"type":"code","val":"else","mustEscape":false,"buffer":false,"loc":{"start":{"line":10,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":10,"column":6}}}
+{"type":"indent","val":4,"loc":{"start":{"line":11,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":11,"column":5}}}
+{"type":"comment","val":" return all html","buffer":false,"loc":{"start":{"line":11,"column":5},"filename":"/cases/blocks-in-if.pug","end":{"line":11,"column":24}}}
+{"type":"newline","loc":{"start":{"line":12,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":12,"column":5}}}
+{"type":"doctype","val":"html","loc":{"start":{"line":12,"column":5},"filename":"/cases/blocks-in-if.pug","end":{"line":12,"column":17}}}
+{"type":"newline","loc":{"start":{"line":13,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":13,"column":5}}}
+{"type":"tag","val":"html","loc":{"start":{"line":13,"column":5},"filename":"/cases/blocks-in-if.pug","end":{"line":13,"column":9}}}
+{"type":"indent","val":8,"loc":{"start":{"line":14,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":14,"column":9}}}
+{"type":"tag","val":"head","loc":{"start":{"line":14,"column":9},"filename":"/cases/blocks-in-if.pug","end":{"line":14,"column":13}}}
+{"type":"indent","val":12,"loc":{"start":{"line":15,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":15,"column":13}}}
+{"type":"tag","val":"meta","loc":{"start":{"line":15,"column":13},"filename":"/cases/blocks-in-if.pug","end":{"line":15,"column":17}}}
+{"type":"start-attributes","loc":{"start":{"line":15,"column":17},"filename":"/cases/blocks-in-if.pug","end":{"line":15,"column":18}}}
+{"type":"attribute","name":"charset","val":"'utf8'","mustEscape":true,"loc":{"start":{"line":15,"column":19},"filename":"/cases/blocks-in-if.pug","end":{"line":15,"column":33}}}
+{"type":"end-attributes","loc":{"start":{"line":15,"column":34},"filename":"/cases/blocks-in-if.pug","end":{"line":15,"column":35}}}
+{"type":"newline","loc":{"start":{"line":16,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":16,"column":13}}}
+{"type":"tag","val":"title","loc":{"start":{"line":16,"column":13},"filename":"/cases/blocks-in-if.pug","end":{"line":16,"column":18}}}
+{"type":"text","val":"sample","loc":{"start":{"line":16,"column":19},"filename":"/cases/blocks-in-if.pug","end":{"line":16,"column":25}}}
+{"type":"newline","loc":{"start":{"line":17,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":17,"column":13}}}
+{"type":"tag","val":"body","loc":{"start":{"line":17,"column":13},"filename":"/cases/blocks-in-if.pug","end":{"line":17,"column":17}}}
+{"type":"indent","val":16,"loc":{"start":{"line":18,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":18,"column":17}}}
+{"type":"block","val":"contents","mode":"replace","loc":{"start":{"line":18,"column":17},"filename":"/cases/blocks-in-if.pug","end":{"line":18,"column":31}}}
+{"type":"indent","val":20,"loc":{"start":{"line":19,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":19,"column":21}}}
+{"type":"tag","val":"p","loc":{"start":{"line":19,"column":21},"filename":"/cases/blocks-in-if.pug","end":{"line":19,"column":22}}}
+{"type":"text","val":"all contetns","loc":{"start":{"line":19,"column":23},"filename":"/cases/blocks-in-if.pug","end":{"line":19,"column":35}}}
+{"type":"outdent","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
+{"type":"outdent","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
+{"type":"outdent","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
+{"type":"outdent","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
+{"type":"outdent","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
+{"type":"eos","loc":{"start":{"line":20,"column":1},"filename":"/cases/blocks-in-if.pug","end":{"line":20,"column":1}}}
