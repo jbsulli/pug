@@ -1204,7 +1204,7 @@ Lexer.prototype = {
     // start looping through the value
     for (; i < str.length; i++) {
       // if the character is in a string or in parentheses/brackets/braces
-      if (!(state.isNesting() || state.isString() || !this.assertExpression(val, true))){
+      if (!(state.isNesting() || state.isString())){
         
         if (this.whitespaceRe.test(str[i])) {
           done = false;
@@ -1214,7 +1214,7 @@ Lexer.prototype = {
             if (!this.whitespaceRe.test(str[x])) {
               // if it is a JavaScript punctuator, then assume that it is
               // a part of the value
-              if(!characterParser.isPunctuator(str[x]) || quoteRe.test(str[x])){
+              if((!characterParser.isPunctuator(str[x]) || quoteRe.test(str[x]) || str[x] === ':') && this.assertExpression(val, true)){
                 done = true;
               }
               break;
@@ -1230,7 +1230,7 @@ Lexer.prototype = {
         
         // if there's no whitespace and the character is not ',', the
         // attribute did not end.
-        if(str[i] === ','){
+        if(str[i] === ',' && this.assertExpression(val, true)){
           break;
         }
       }

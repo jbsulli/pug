@@ -17,9 +17,11 @@
     "postinstall": "lerna bootstrap",
     "pretest": "lerna run pretest",
     "test": "jest",
+    "test-lexer": "jest packages/pug-lexer/test/index.test.js",
     "coverage": "jest --coverage",
     "coveralls": "npm run coverage && cat ./coverage/lcov.info | coveralls",
-    "watch": "jest --watch"
+    "watch": "jest --watch",
+    "watch-lexer": "jest --watch packages/pug-lexer/test/index.test.js"
   },
   "jest": {
     "testEnvironment": "node",
