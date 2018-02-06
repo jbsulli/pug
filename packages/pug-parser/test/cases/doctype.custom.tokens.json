@@ -1,2 +1,2 @@
-{"type":"doctype","line":1,"col":1,"val":"custom stuff"}
-{"type":"eos","line":1,"col":21}
+{"type":"doctype","val":"custom stuff","loc":{"start":{"line":1,"column":1},"filename":"/cases/doctype.custom.pug","end":{"line":1,"column":21}}}
+{"type":"eos","loc":{"start":{"line":1,"column":21},"filename":"/cases/doctype.custom.pug","end":{"line":1,"column":21}}}
