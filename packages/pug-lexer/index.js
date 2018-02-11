@@ -1178,7 +1178,12 @@ Lexer.prototype = {
     }
     
     if(str[i] !== '='){
-       return str;
+      // check for anti-pattern `div("foo"bar)`
+      if (i === 0 && str && !this.whitespaceRe.test(str[0]) && str[0] !== ','){
+        this.error('INVALID_KEY_CHARACTER', 'Unexpected character ' + str[0] + ' expected `=`');
+      } else {
+        return str;
+      }
     }
     
     this.lineno = line;

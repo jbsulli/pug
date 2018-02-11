@@ -3,6 +3,7 @@
 var fs = require('fs');
 var assert = require('assert');
 var lex = require('../');
+var path = require('path');
 
 var dir = __dirname + '/cases/';
 fs.readdirSync(dir).forEach(function (testCase) {
@@ -10,6 +11,15 @@ fs.readdirSync(dir).forEach(function (testCase) {
     test(testCase, () => {
       var result = lex(fs.readFileSync(dir + testCase, 'utf8'), {filename: dir + testCase});
       expect(result).toMatchSnapshot();
+      /*fs.writeFileSync(
+        path.join(__dirname, '../../pug-parser/test/cases/', testCase.substr(0, testCase.length - 4) + ".tokens.json"), 
+        result
+          .map(token => {
+            token.loc.filename = '/' + path.relative(__dirname, token.loc.filename).replace('\\', '/');
+            return token;
+          })
+          .map(token => JSON.stringify(token)).join('\n')
+      );*/
     });
   }
 });
